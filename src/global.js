@@ -26,7 +26,28 @@ fetch('https://raw.githubusercontent.com/ydarissep/dex-core/main/index.html').th
         await eval.call(window,text)
     }).catch(error => {
         console.warn(error)
-    })    
+    })
+
+    // Local addition: build the "Type Chart" tab once the core UI is in place.
+    try {
+        await buildTypeChartTab()
+    } catch (error) {
+        console.warn(error)
+    }
+
+    // Local addition: build the "vs" comparison tab.
+    try {
+        buildVsTab()
+    } catch (error) {
+        console.warn(error)
+    }
+
+    // Local addition: add "good vs" / "sucks vs" columns to the species panel.
+    try {
+        installSpeciesMatchupColumns()
+    } catch (error) {
+        console.warn(error)
+    }
 
 }).catch(error => {
 	console.warn(error)

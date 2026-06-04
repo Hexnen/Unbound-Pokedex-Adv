@@ -272,16 +272,29 @@ new Promise(resolve => {
 		subtree: true
 	});
 }).then((tableButton) => {
-	const enhancementsWrapper = document.createElement("div");
-	enhancementsWrapper.id = "enhancementsWrapper";
 	const buttonEnhancements = document.createElement("button");
 	buttonEnhancements.id = "buttonEnhancements";
 	buttonEnhancements.type = "button";
 	buttonEnhancements.textContent = "Enhancements";
-	buttonEnhancements.style.width = "140px";
 	buttonEnhancements.onclick = reloadPopupEnhancements;
-	enhancementsWrapper.append(buttonEnhancements);
-	tableButton.append(enhancementsWrapper);
+	// Core forces button[type=button] to width:100px, which clips "Enhancements".
+	buttonEnhancements.style.width = "140px";
+
+	// Place the button in the footer, to the left of "Settings".
+	const footerButtonContainer = document.getElementById("footerButtonContainer");
+	const settingsButton = document.getElementById("settings");
+	if (footerButtonContainer && settingsButton) {
+		footerButtonContainer.insertBefore(buttonEnhancements, settingsButton);
+		// Footer buttons are spaced only by whitespace text nodes; add one so the
+		// button doesn't touch "Settings".
+		footerButtonContainer.insertBefore(document.createTextNode(" "), settingsButton);
+	} else {
+		// Fallback: keep the original spot in the top tab bar.
+		const enhancementsWrapper = document.createElement("div");
+		enhancementsWrapper.id = "enhancementsWrapper";
+		enhancementsWrapper.append(buttonEnhancements);
+		tableButton.append(enhancementsWrapper);
+	}
 	
 	const storedSaveData = localStorage.getItem("saveData");
 	if (storedSaveData && storedSaveData != "undefined") {
