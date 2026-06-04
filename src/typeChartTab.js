@@ -55,12 +55,15 @@ window.buildTypeChartTab = async function () {
     filter.classList.add("hide")
     tableFilter.append(filter)
 
-    // --- the matrix table itself ---
-    const matrixTable = document.createElement("table")
-    matrixTable.id = "typeChartTable"
-    matrixTable.classList.add("hide", "typeChartTable")
+    // --- the tab container ---
+    // #typeChartTable is the element core's tableButtonClick toggles. We make it a
+    // <div> (not a <table>) so the legend can wrap to the viewport and the wide
+    // matrix can sit in its own horizontal-scroll box — important on mobile.
+    const container = document.createElement("div")
+    container.id = "typeChartTable"
+    container.classList.add("hide", "typeChartTable")
 
-    const caption = document.createElement("caption")
+    const caption = document.createElement("div")
     caption.className = "typeChartCaption"
     caption.innerHTML =
         '<div class="typeChartInfo">' +
@@ -86,7 +89,12 @@ window.buildTypeChartTab = async function () {
                 '<span><span class="typeChartCell mult0">0</span> no effect</span>' +
             '</div>' +
         '</div>'
-    matrixTable.append(caption)
+
+    // The matrix itself is a real <table> inside a horizontal-scroll wrapper.
+    const scroll = document.createElement("div")
+    scroll.className = "typeChartScroll"
+    const matrixTable = document.createElement("table")
+    matrixTable.className = "typeChartMatrix"
 
     // Header row: corner + one column per defending type.
     const thead = document.createElement("thead")
@@ -134,7 +142,10 @@ window.buildTypeChartTab = async function () {
     const tbody = document.createElement("tbody")
     tbody.id = "typeChartTableTbody"
     matrixTable.append(tbody)
-    table.append(matrixTable)
+    scroll.append(matrixTable)
+    container.append(scroll)
+    container.append(caption)
+    table.append(container)
 
     injectTypeChartStyle()
 
@@ -343,14 +354,22 @@ function injectTypeChartStyle() {
     style.id = "typeChartStyle"
     style.textContent = `
         .typeChartTable {
+            margin: 0 auto;
+            max-width: 100%;
+            font-family: "Roboto Condensed", sans-serif;
+        }
+        .typeChartScroll {
+            overflow-x: auto;
+            max-width: 100%;
+            -webkit-overflow-scrolling: touch;
+        }
+        .typeChartMatrix {
             border-collapse: separate;
             border-spacing: 2px;
             margin: 0 auto;
-            font-family: "Roboto Condensed", sans-serif;
         }
         .typeChartCaption {
-            padding: 18px 8px 14px;
-            caption-side: bottom;
+            padding: 14px 8px 6px;
         }
         .typeChartInfo {
             max-width: 640px;
@@ -423,6 +442,14 @@ function injectTypeChartStyle() {
         .mult1    { background: rgba(127,127,127,0.12); color: transparent; text-shadow: none; }
         .mult2    { background: #4f9d4f; }
         .mult4    { background: #2e7d32; }
+        /* mobile: shrink cells so more of the matrix fits; the rest scrolls. */
+        @media (max-width: 600px) {
+            .typeChartMatrix { border-spacing: 1px; }
+            .typeChartCell { width: 1.7em; min-width: 1.7em; height: 1.7em; font-size: 0.8em; }
+            .typeChartColHead { font-size: 0.66em; padding: 3px 2px; }
+            .typeChartRowHead { font-size: 0.78em; padding: 2px 5px 2px 4px; }
+            .typeChartCorner { font-size: 0.62em; padding: 3px; }
+        }
     `
     document.head.append(style)
 }

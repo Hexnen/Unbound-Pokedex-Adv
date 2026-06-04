@@ -53,8 +53,26 @@ window.buildVsTab = function () {
     const input = document.createElement("input")
     input.type = "search"
     input.id = "vsInput"
+    input.placeholder = "Add a Pokémon to compare…"
     input.classList.add("hide")
+    input.setAttribute("list", "vsInputDataList")
     tableInput.append(input)
+
+    // Empty datalist now; it's filled lazily once species data has loaded (see
+    // vsEnsureNameList). Picking an option adds the Pokémon to the comparison.
+    const datalist = document.createElement("datalist")
+    datalist.id = "vsInputDataList"
+    window.vsNameMap = window.vsNameMap || {}
+    tableInput.append(datalist)
+
+    input.addEventListener("change", () => {
+        const token = window.vsNameMap[input.value.trim().toLowerCase()]
+        if (token) {
+            vsAddSelection(token)
+            input.value = ""
+            renderVsTab()
+        }
+    })
 
     const filter = document.createElement("div")
     filter.id = "vsFilter"
@@ -92,9 +110,31 @@ window.buildVsTab = function () {
 }
 
 
+// Populate the search datalist + name→token map once species data is available.
+function vsEnsureNameList() {
+    if (typeof species === "undefined") return
+    const datalist = document.getElementById("vsInputDataList")
+    if (!datalist || datalist.options.length > 0) return
+    window.vsNameMap = window.vsNameMap || {}
+    const names = Object.keys(species)
+        .filter(n => n !== "SPECIES_NONE" && species[n] && species[n]["baseSpeed"] != 0)
+        .map(n => [n, sanitizeString(n)])
+        .sort((x, y) => x[1].localeCompare(y[1]))
+    for (const [token, disp] of names) {
+        const key = disp.toLowerCase()
+        if (key in window.vsNameMap) continue
+        window.vsNameMap[key] = token
+        const opt = document.createElement("option")
+        opt.value = disp
+        datalist.append(opt)
+    }
+}
+
+
 function renderVsTab() {
     const content = document.getElementById("vsContent")
     if (!content) return
+    vsEnsureNameList()
     while (content.firstChild) content.removeChild(content.firstChild)
 
     // Drop selections that are no longer valid species.
@@ -207,6 +247,20 @@ function toggleVsSelection(name) {
     } else if (sel.length < 2) {
         sel.push(name)
     } else {
+        sel.shift()
+        sel.push(name)
+    }
+    localStorage.setItem("vsSelection", JSON.stringify(sel))
+}
+
+
+// Add a Pokémon to the comparison (from the search box). Replaces the oldest
+// pick when both slots are full; ignores duplicates.
+function vsAddSelection(name) {
+    const sel = window.vsSelection
+    if (sel.includes(name)) return
+    if (sel.length < 2) sel.push(name)
+    else {
         sel.shift()
         sel.push(name)
     }
