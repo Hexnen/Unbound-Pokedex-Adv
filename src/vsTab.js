@@ -190,9 +190,9 @@ function buildSpeciesCatchHint(name) {
 
 // Predicates for the dex filters (key = SPECIES_ token).
 const VS_DEX_PREDICATES = {
-    unbound: key => vsIsObtainable(key),
-    national: key => { const i = vsCatchInfo(key); return !!(i && i.nat != null && i.nat <= 809) },
     borrius: key => { const i = vsCatchInfo(key); return !!(i && i.bor != null) },
+    national: key => { const i = vsCatchInfo(key); return !!(i && i.nat != null && i.nat <= 809) },
+    gen8: key => { const i = vsCatchInfo(key); return !!(i && i.nat != null && i.nat >= 810) },
 }
 
 
@@ -213,11 +213,11 @@ function vsApplySpeciesDexFilter(mode) {
 // Add mutually-exclusive dex filter toggles (Unbound / National / Borrius) to the
 // Species tab, next to core's Strategy/Changed setting buttons.
 window.installSpeciesUnboundFilter = function () {
-    if (document.getElementById("dexFilter_unbound")) return
+    if (document.getElementById("dexFilter_borrius")) return
     const filter = document.getElementById("speciesFilter")
     if (!filter) return
 
-    const modes = [["national", "National"], ["unbound", "Unbound"], ["borrius", "Borrius"]]
+    const modes = [["borrius", "Borrius"], ["national", "National"], ["gen8", "Gen 8"]]
     const buttons = []
     window.vsSpeciesDexMode = null
 
@@ -229,9 +229,9 @@ window.installSpeciesUnboundFilter = function () {
         btn.dataset.mode = mode
         btn.innerText = labelText
         btn.title = {
-            unbound: "Show only Pokémon in the Unbound dex (905)",
-            national: "Show only the National dex (≤ #809)",
-            borrius: "Show only the Borrius regional dex",
+            borrius: "Show only the Borrius regional dex (~498)",
+            national: "Show only the National dex (#1–809)",
+            gen8: "Show only the Gen 8 / post-game additions (#810+)",
         }[mode]
         btn.addEventListener("click", () => {
             window.vsSpeciesDexMode = (window.vsSpeciesDexMode === mode) ? null : mode
