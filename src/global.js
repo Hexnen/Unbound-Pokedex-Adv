@@ -9,17 +9,23 @@ fetch('https://raw.githubusercontent.com/ydarissep/dex-core/main/index.html').th
 }).then(async rawHTMLText => {
 	const parser = new DOMParser()
 	const doc = parser.parseFromString(rawHTMLText, 'text/html')
-    document.querySelector('html').innerHTML = doc.querySelector('html').innerHTML
 
-
-
+    // Replace only the <body>, not the whole <html>. Our <head> — and with it
+    // the PWA manifest/meta/apple-touch tags from index.html — must stay present
+    // from the very first page load, otherwise mobile browsers won't offer a
+    // real "Install" (they only create a plain home-screen shortcut). dex-core's
+    // own <head> just holds defer scripts (which never execute when assigned via
+    // innerHTML) and stylesheets we already load locally, so nothing is lost.
+    for (const attr of doc.body.getAttributeNames()) {
+        document.body.setAttribute(attr, doc.body.getAttribute(attr))
+    }
+    document.body.innerHTML = doc.body.innerHTML
 
     document.title = "Unbound Dex"
     document.getElementById("footerName").innerText = "Unbound\nYdarissep Pokedex"
 
-    // dex-core's index.html replaced the whole <head> above, wiping the PWA
-    // tags from our local index.html. Re-inject them so the app stays
-    // installable as a PWA.
+    // Belt-and-suspenders: make sure the PWA tags are present (no-op if the
+    // <head> from index.html is intact, which it now is).
     injectPWATags()
 
 
