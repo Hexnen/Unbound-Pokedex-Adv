@@ -568,11 +568,13 @@ function vsCoverageAgainst(attacker, defender) {
 // The attacker's move-type that deals the highest %HP to the defender (by the
 // strongest single move of each type). Used to auto-open the best matchup.
 function vsBestCoverageType(attacker, defender) {
+    const level = vsLevelOf(attacker)
     let best = null
     let bestPct = -1
     for (const t of vsAttackingMoveTypes(attacker)) {
         let typeMax = 0
         for (const mv of vsMovesOfType(attacker, t)) {
+            if (mv.level > level) continue // only moves it can actually have now
             const d = vsEstimateDamage(attacker, defender, mv.power, mv.split, t)
             if (d.maxPct > typeMax) typeMax = d.maxPct
         }
@@ -601,6 +603,18 @@ function buildVsCoverage(a, b) {
         '<br><span class="vsCovStar">★</span> = STAB — same-type attack bonus, ' +
         "a move matching the user's own type deals ×1.5"
     box.append(note)
+
+    const toggle = document.createElement("label")
+    toggle.className = "vsCovToggle"
+    const cb = document.createElement("input")
+    cb.type = "checkbox"
+    cb.checked = !!window.vsShowUnavailable
+    cb.addEventListener("change", () => {
+        window.vsShowUnavailable = cb.checked
+        renderVsTab()
+    })
+    toggle.append(cb, document.createTextNode(" show moves not learnable yet (greyed)"))
+    box.append(toggle)
 
     const cols = document.createElement("div")
     cols.className = "vsCoverageCols"
@@ -725,15 +739,21 @@ function vsMovesOfType(name, type) {
             if (mv["split"] === "SPLIT_STATUS") continue
             if (!(Number(mv["power"]) > 0)) continue
             if (mv["type"] !== type) continue
+            // Level required to have the move: the level-up level, or 0 for
+            // TM/tutor/egg moves (obtainable regardless of level).
+            const lvl = Array.isArray(entry) ? Number(entry[1]) : 0
             if (!byName.has(moveName)) {
                 byName.set(moveName, {
                     name: mv["ingameName"],
                     power: Number(mv["power"]),
                     split: mv["split"],
                     sources: new Set([tag]),
+                    level: lvl,
                 })
             } else {
-                byName.get(moveName).sources.add(tag)
+                const m = byName.get(moveName)
+                m.sources.add(tag)
+                m.level = Math.min(m.level, lvl)
             }
         }
     }
@@ -838,21 +858,37 @@ function buildVsMoveList(detail) {
     const panel = document.createElement("div")
     panel.className = "vsMoveList"
 
-    const list = vsMovesOfType(detail.attacker, detail.type)
+    const level = vsLevelOf(detail.attacker)
+    const all = vsMovesOfType(detail.attacker, detail.type)
+    // Hide moves the Pokémon can't have at its level, unless the toggle is on.
+    const list = (window.vsShowUnavailable ? all : all.filter(mv => mv.level <= level))
+        .sort((x, y) => {
+            const xa = x.level <= level, ya = y.level <= level
+            if (xa !== ya) return xa ? -1 : 1   // available first
+            return y.power - x.power
+        })
+
     if (list.length === 0) {
         const none = document.createElement("div")
         none.className = "vsNote"
-        none.innerText = "no moves"
+        none.innerText = "no moves at this level"
         panel.append(none)
         return panel
     }
     for (const mv of list) {
+        const avail = mv.level <= level
         const row = document.createElement("div")
-        row.className = "vsMoveRow"
+        row.className = avail ? "vsMoveRow" : "vsMoveRow vsMoveUnavailable"
 
         const nm = document.createElement("span")
         nm.className = "vsMoveName"
         nm.innerText = mv.name
+        if (!avail) {
+            const req = document.createElement("span")
+            req.className = "vsMoveReq"
+            req.innerText = `Lv${mv.level}`
+            nm.append(document.createTextNode(" "), req)
+        }
 
         const meta = document.createElement("span")
         meta.className = "vsMoveMeta"
@@ -860,12 +896,12 @@ function buildVsMoveList(detail) {
 
         const dmg = vsEstimateDamage(detail.attacker, detail.defender, mv.power, mv.split, detail.type)
         const pct = document.createElement("span")
-        pct.className = "vsMovePct" + (dmg.maxPct >= 100 ? " vsMoveKO" : "")
+        pct.className = "vsMovePct" + (avail && dmg.maxPct >= 100 ? " vsMoveKO" : "")
         pct.innerText = vsFmtPct(dmg)
 
         const splitShort = mv.split === "SPLIT_PHYSICAL" ? "Phys" : mv.split === "SPLIT_SPECIAL" ? "Spec" : ""
         row.append(nm, meta, pct)
-        row.title = `${mv.power} BP · ${splitShort} · ${[...mv.sources].join(", ")}`
+        row.title = `${mv.power} BP · ${splitShort} · ${[...mv.sources].join(", ")}` + (avail ? "" : ` · learned at Lv${mv.level}`)
         panel.append(row)
     }
 
@@ -1156,6 +1192,14 @@ function injectVsStyle() {
             min-width: 50px; text-align: right; color: rgb(120,170,255);
         }
         .vsMoveKO { color: rgb(239,120,118); }
+        .vsMoveUnavailable { opacity: 0.42; }
+        .vsMoveReq { font-size: 10px; color: rgb(235,185,90); font-weight: 700; }
+        .vsCovToggle {
+            display: flex; align-items: center; justify-content: center; gap: 6px;
+            font-size: 12px; opacity: 0.85; margin-bottom: 10px; cursor: pointer;
+            user-select: none;
+        }
+        .vsCovToggle input { width: auto; margin: 0; cursor: pointer; }
         .vsMoveListFoot {
             margin-top: 7px; padding-top: 6px;
             border-top: 1px solid rgba(255,255,255,0.08);
