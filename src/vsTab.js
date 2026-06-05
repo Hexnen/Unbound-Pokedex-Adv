@@ -298,20 +298,16 @@ function buildVsComparison() {
         resultB = "win"
     }
 
-    // Header: A vs B with sprite, name, types, abilities. The win/lose arrows sit
-    // on the outer sides — left of A, right of B.
+    // Header: A vs B with sprite, name, types, abilities. The win/lose arrow is
+    // pinned to the outer top corner of each Pokémon's sprite.
     const head = document.createElement("div")
     head.className = "vsHead"
-    const arrowA = makeVsArrow(resultA)
-    const arrowB = makeVsArrow(resultB)
-    if (arrowA) head.append(arrowA)
-    head.append(buildVsMonHeader(a))
+    head.append(buildVsMonHeader(a, resultA, "left"))
     const vsLabel = document.createElement("div")
     vsLabel.className = "vsHeadVs bold"
     vsLabel.innerText = "vs"
     head.append(vsLabel)
-    head.append(buildVsMonHeader(b))
-    if (arrowB) head.append(arrowB)
+    head.append(buildVsMonHeader(b, resultB, "right"))
     wrap.append(head)
 
     wrap.append(buildVsMatchup(a, b))
@@ -376,24 +372,31 @@ function vsOffensiveBetween(attacker, defender) {
 }
 
 
-function makeVsArrow(result) {
+function makeVsArrow(result, side) {
     if (result !== "win" && result !== "lose") return null
     const arrow = document.createElement("div")
-    arrow.className = `vsResultArrow vsResult-${result}`
+    arrow.className = `vsResultArrow vsResult-${result} vsResultArrow-${side}`
     arrow.innerText = result === "win" ? "▲" : "▼"
     arrow.title = result === "win" ? "Type advantage" : "Type disadvantage"
     return arrow
 }
 
 
-function buildVsMonHeader(name) {
+function buildVsMonHeader(name, result, side) {
     const col = document.createElement("div")
     col.className = "vsMon"
 
+    // Sprite in a relative wrapper so the win/lose arrow can be pinned to its
+    // outer top corner (stays put on resize).
+    const spriteWrap = document.createElement("div")
+    spriteWrap.className = "vsMonSpriteWrap"
     const img = document.createElement("img")
     img.className = "vsMonSprite"
     img.src = getSpeciesSpriteSrc(name)
-    col.append(img)
+    spriteWrap.append(img)
+    const arrow = makeVsArrow(result, side)
+    if (arrow) spriteWrap.append(arrow)
+    col.append(spriteWrap)
 
     const nm = document.createElement("div")
     nm.className = "vsMonName bold"
@@ -1152,10 +1155,14 @@ function injectVsStyle() {
         .vsMonTypes { display: flex; gap: 4px; justify-content: center; }
         .vsMonAbilities { text-align: center; font-size: 13px; opacity: 0.85; }
         .vsHeadVs { font-size: 34px; opacity: 0.5; letter-spacing: 1px; margin: 22px 22px 0; }
+        .vsMonSpriteWrap { position: relative; display: inline-block; line-height: 0; }
         .vsResultArrow {
-            font-size: 32px; line-height: 1; font-weight: 700;
-            flex: 0 0 auto; margin-top: 24px;
+            position: absolute; top: -4px; z-index: 2;
+            font-size: 26px; line-height: 1; font-weight: 700;
+            pointer-events: none;
         }
+        .vsResultArrow-left { left: -8px; }
+        .vsResultArrow-right { right: -8px; }
         .vsResult-win { color: rgb(100,221,23); text-shadow: 0 0 8px rgba(100,221,23,0.45); }
         .vsResult-lose { color: rgb(239,83,80); text-shadow: 0 0 8px rgba(239,83,80,0.4); }
         .vsMatchup, .vsStatsBox, .vsCoverageBox {
