@@ -592,9 +592,10 @@ function vsBestCoverageType(attacker, defender) {
 }
 
 
-function vsMakeToggle(labelText, checked, onChange) {
+function vsMakeToggle(labelText, checked, onChange, title) {
     const label = document.createElement("label")
     label.className = "vsCovToggle"
+    if (title) label.title = title
     const cb = document.createElement("input")
     cb.type = "checkbox"
     cb.checked = checked
@@ -627,7 +628,7 @@ function buildVsCoverage(a, b) {
     const toggles = document.createElement("div")
     toggles.className = "vsCovToggles"
     toggles.append(
-        vsMakeToggle("show not-yet-learnable (greyed)", !!window.vsShowUnavailable, v => { window.vsShowUnavailable = v }),
+        vsMakeToggle("locked", !!window.vsShowUnavailable, v => { window.vsShowUnavailable = v }, "Show moves not learnable at this level (greyed out)"),
         vsMakeToggle("TM/HM", window.vsIncludeTM !== false, v => { window.vsIncludeTM = v }),
         vsMakeToggle("Tutor", window.vsIncludeTutor !== false, v => { window.vsIncludeTutor = v }),
         vsMakeToggle("Egg", window.vsIncludeEgg !== false, v => { window.vsIncludeEgg = v }),
