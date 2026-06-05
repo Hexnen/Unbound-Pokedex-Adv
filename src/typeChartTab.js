@@ -124,7 +124,10 @@ window.buildTypeChartTab = async function () {
 
         const rowHead = document.createElement("th")
         rowHead.className = `${atk} typeChartHead typeChartRowHead`
-        rowHead.append(typeIcon(atk, "typeChartRowIcon"), document.createTextNode(" " + sanitizeString(atk)))
+        const rowInner = document.createElement("span")
+        rowInner.className = "typeChartRowInner"
+        rowInner.append(typeIcon(atk, "typeChartRowIcon"), document.createTextNode(sanitizeString(atk)))
+        rowHead.append(rowInner)
         tr.append(rowHead)
 
         for (const def of types) {
@@ -483,8 +486,10 @@ function injectTypeChartStyle() {
             -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat;
             -webkit-mask-position: center; mask-position: center;
         }
-        .typeChartHeadIcon { width: 18px; height: 18px; vertical-align: middle; }
-        .typeChartRowIcon { width: 14px; height: 14px; vertical-align: -0.18em; }
+        .typeChartColHead, .typeChartRowHead, .typeChartCorner { vertical-align: middle; }
+        .typeChartHeadIcon { width: 18px; height: 18px; display: block; margin: 0 auto; }
+        .typeChartRowInner { display: inline-flex; align-items: center; gap: 0.4em; }
+        .typeChartRowIcon { width: 14px; height: 14px; flex: 0 0 auto; }
         /* multiplier colours */
         .mult0    { background: #2b2b2b; }
         .mult0_25 { background: #7a1d1d; }
