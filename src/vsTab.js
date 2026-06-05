@@ -888,6 +888,15 @@ function buildVsMoveList(detail) {
     const panel = document.createElement("div")
     panel.className = "vsMoveList"
 
+    // Owner indicator — only shown in the single-column (mobile) layout, where the
+    // move lists stack full-width and the chevron link to a column is gone.
+    const owner = document.createElement("img")
+    owner.className = "vsMoveListOwner"
+    owner.src = getSpeciesSpriteSrc(detail.attacker)
+    owner.title = sanitizeString(detail.attacker)
+    owner.alt = sanitizeString(detail.attacker)
+    panel.append(owner)
+
     const level = vsLevelOf(detail.attacker)
     const includeTM = window.vsIncludeTM !== false
     // Resolve each move's availability for the current toggles; drop ones that
@@ -1214,12 +1223,14 @@ function injectVsStyle() {
             box-shadow: inset 0 0 0 1px rgba(120,170,255,0.7);
         }
         .vsMoveList {
+            position: relative;
             width: 100%;
             border: 1px solid rgba(255,255,255,0.12);
             border-radius: 8px; padding: 8px 10px;
             align-self: flex-start;
             background: rgba(255,255,255,0.03);
         }
+        .vsMoveListOwner { display: none; }
         .vsMoveRow {
             display: flex; align-items: center;
             gap: 6px; padding: 2px 0; font-size: 13px;
@@ -1318,7 +1329,11 @@ function injectVsStyle() {
             .vsCoverageRow { order: 1; }
             .vsCovSlot { order: 2; flex: 1 0 100%; width: auto; justify-content: center; }
             .vsCovSlot:empty { display: none; }
-            .vsMoveList { width: 100%; max-width: 320px; }
+            .vsMoveList { width: 100%; max-width: 320px; padding-left: 44px; }
+            .vsMoveListOwner {
+                display: block; position: absolute; left: 7px; top: 6px;
+                width: 30px; height: 30px; image-rendering: pixelated;
+            }
             .vsCovChevron { display: none; }
             /* Stats: stack BASE over CURRENT */
             .vsStatsWrap { gap: 14px; }
