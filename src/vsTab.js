@@ -793,6 +793,17 @@ function vsMoveAvail(mv, includeTM) {
 }
 
 
+// "When does it learn this move" label: the level for level-up moves, otherwise
+// the source (TM/Tutor/Egg). Uses the already-resolved availLevel.
+function vsLearnLabel(mv) {
+    if (mv.availLevel > 0 && mv.availLevel !== Infinity) return `Lv${mv.availLevel}`
+    if (mv.sources.has("TM")) return "TM"
+    if (mv.sources.has("Tutor")) return "Tutor"
+    if (mv.sources.has("Egg")) return "Egg"
+    return "—"
+}
+
+
 // The species whose evolution produces `name` (its immediate pre-evolution).
 function vsFindPreEvo(name) {
     for (const s in species) {
@@ -943,8 +954,12 @@ function buildVsMoveList(detail) {
         pct.className = "vsMovePct" + (avail && dmg.maxPct >= 100 ? " vsMoveKO" : "")
         pct.innerText = vsFmtPct(dmg)
 
+        const learn = document.createElement("span")
+        learn.className = "vsMoveLearn"
+        learn.innerText = vsLearnLabel(mv)
+
         const splitShort = mv.split === "SPLIT_PHYSICAL" ? "Phys" : mv.split === "SPLIT_SPECIAL" ? "Spec" : ""
-        row.append(nm, meta, pct)
+        row.append(nm, learn, meta, pct)
         row.title = `${mv.power} BP · ${splitShort} · ${[...mv.sources].join(", ")}` + (avail ? "" : ` · learned at Lv${mv.availLevel}`)
         panel.append(row)
     }
@@ -1244,6 +1259,10 @@ function injectVsStyle() {
         .vsMoveKO { color: rgb(239,120,118); }
         .vsMoveUnavailable { opacity: 0.42; }
         .vsMoveReq { font-size: 10px; color: rgb(235,185,90); font-weight: 700; }
+        .vsMoveLearn {
+            display: none; font-size: 11px; color: rgb(225,180,95); font-weight: 700;
+            min-width: 40px; text-align: right; white-space: nowrap;
+        }
         .vsCovToggles {
             display: flex; flex-wrap: wrap; align-items: center; justify-content: center;
             gap: 6px 18px; margin-bottom: 10px;
@@ -1333,6 +1352,9 @@ function injectVsStyle() {
             .vsCovSlot { order: 2; flex: 1 0 100%; width: auto; justify-content: center; }
             .vsCovSlot:empty { display: none; }
             .vsMoveList { width: 100%; max-width: 320px; padding-left: 44px; }
+            .vsMoveLearn { display: inline-block; }
+            .vsMoveReq { display: none; }
+            .vsMoveList .vsMoveName { flex: 1; }
             .vsMoveListOwner {
                 display: block; position: absolute; left: 7px; top: 6px;
                 width: 30px; height: 30px; image-rendering: pixelated;
