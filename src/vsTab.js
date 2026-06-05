@@ -76,6 +76,10 @@ window.buildVsTab = function () {
                 for (const k of Object.keys(data)) window.vsUnboundByNorm[vsNormName(k)] = data[k]
                 vsEnsureNameList(true)
                 renderVsTab()
+                // If a species panel is already open, fill in its catch hint now.
+                if (typeof panelSpecies !== "undefined" && panelSpecies) {
+                    try { buildSpeciesCatchHint(panelSpecies) } catch (e) {}
+                }
             })
             .catch(e => console.warn("unboundDex.json", e))
     }
@@ -143,6 +147,57 @@ function vsIsObtainable(name) {
 function vsCatchInfo(name) {
     if (!window.vsUnboundByNorm) return null
     return window.vsUnboundByNorm[vsNormName(sanitizeString(name))] || null
+}
+
+
+// Inject the Unbound dex numbers + catch hint into the species panel (under the
+// abilities). Called from the wrapped createSpeciesPanel and when the data loads.
+function buildSpeciesCatchHint(name) {
+    const old = document.getElementById("speciesCatchHint")
+    if (old) old.remove()
+    const info = vsCatchInfo(name)
+    const anchor = document.getElementById("speciesAbilitiesMainContainer")
+    if (!info || !anchor) return
+
+    const el = document.createElement("div")
+    el.id = "speciesCatchHint"
+    el.className = "speciesCatchHint speciesPanelTextPadding"
+
+    if (info.nat || info.bor) {
+        const dex = document.createElement("div")
+        dex.className = "speciesCatchDex"
+        const parts = []
+        if (info.nat) parts.push(`Nat #${info.nat}`)
+        if (info.bor) parts.push(`Borrius #${info.bor}`)
+        dex.innerText = parts.join(" · ")
+        el.append(dex)
+    }
+    if (info.catch) {
+        const row = document.createElement("div")
+        const label = document.createElement("span")
+        label.className = "speciesPanelText"
+        label.innerText = "Catch: "
+        const txt = document.createElement("span")
+        txt.className = "speciesCatchText"
+        txt.innerText = info.catch
+        row.append(label, txt)
+        el.append(row)
+    }
+    anchor.after(el)
+    injectCatchStyle()
+}
+
+
+function injectCatchStyle() {
+    if (document.getElementById("speciesCatchStyle")) return
+    const s = document.createElement("style")
+    s.id = "speciesCatchStyle"
+    s.textContent = `
+        .speciesCatchHint { padding-top: 6px; }
+        .speciesCatchDex { font-size: 12px; opacity: 0.55; }
+        .speciesCatchText { color: rgb(150,200,255); }
+    `
+    document.head.append(s)
 }
 
 

@@ -194,6 +194,11 @@ window.installSpeciesMatchupColumns = function () {
         } catch (e) {
             console.warn("Matchup columns:", e)
         }
+        try {
+            if (typeof buildSpeciesCatchHint === "function") buildSpeciesCatchHint(name)
+        } catch (e) {
+            console.warn("Catch hint:", e)
+        }
         return result
     }
     window.createSpeciesPanel.__matchupWrapped = true
