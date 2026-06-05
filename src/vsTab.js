@@ -1316,8 +1316,11 @@ function injectVsStyle() {
 
         /* ---- mobile ---- */
         @media (max-width: 600px) {
-            #vsContent { padding: 10px 6px; }
-            .vsTableCell { padding: 6px 2px; }
+            /* Full-bleed: drop the side padding and pull out by the body's 8px
+               margin so the boxes sit flush against the screen edges. */
+            #vsContent { padding: 10px 0; margin: 10px -8px; max-width: none; }
+            .vsTableCell { padding: 6px 0; }
+            .vsMatchup, .vsStatsBox, .vsCoverageBox { padding: 12px 8px; }
             .vsHead { gap: 2px; }
             .vsMon { min-width: 104px; }
             .vsHeadVs { margin: 22px 8px 0; font-size: 26px; }
