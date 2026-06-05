@@ -54,6 +54,13 @@ fetch('https://raw.githubusercontent.com/ydarissep/dex-core/main/index.html').th
         console.warn(error)
     }
 
+    // Local addition: "Download for offline" button (PWA warm-up).
+    try {
+        installOfflineButton()
+    } catch (error) {
+        console.warn(error)
+    }
+
 }).catch(error => {
 	console.warn(error)
 })
