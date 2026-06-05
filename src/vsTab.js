@@ -569,12 +569,14 @@ function vsCoverageAgainst(attacker, defender) {
 // strongest single move of each type). Used to auto-open the best matchup.
 function vsBestCoverageType(attacker, defender) {
     const level = vsLevelOf(attacker)
+    const includeTM = window.vsIncludeTM !== false
     let best = null
     let bestPct = -1
     for (const t of vsAttackingMoveTypes(attacker)) {
         let typeMax = 0
         for (const mv of vsMovesOfType(attacker, t)) {
-            if (mv.level > level) continue // only moves it can actually have now
+            const a = vsMoveAvail(mv, includeTM)
+            if (!a.obtainable || a.availLevel > level) continue // usable now only
             const d = vsEstimateDamage(attacker, defender, mv.power, mv.split, t)
             if (d.maxPct > typeMax) typeMax = d.maxPct
         }
@@ -584,6 +586,21 @@ function vsBestCoverageType(attacker, defender) {
         }
     }
     return best
+}
+
+
+function vsMakeToggle(labelText, checked, onChange) {
+    const label = document.createElement("label")
+    label.className = "vsCovToggle"
+    const cb = document.createElement("input")
+    cb.type = "checkbox"
+    cb.checked = checked
+    cb.addEventListener("change", () => {
+        onChange(cb.checked)
+        renderVsTab()
+    })
+    label.append(cb, document.createTextNode(" " + labelText))
+    return label
 }
 
 
@@ -604,17 +621,13 @@ function buildVsCoverage(a, b) {
         "a move matching the user's own type deals ×1.5"
     box.append(note)
 
-    const toggle = document.createElement("label")
-    toggle.className = "vsCovToggle"
-    const cb = document.createElement("input")
-    cb.type = "checkbox"
-    cb.checked = !!window.vsShowUnavailable
-    cb.addEventListener("change", () => {
-        window.vsShowUnavailable = cb.checked
-        renderVsTab()
-    })
-    toggle.append(cb, document.createTextNode(" show moves not learnable yet (greyed)"))
-    box.append(toggle)
+    const toggles = document.createElement("div")
+    toggles.className = "vsCovToggles"
+    toggles.append(
+        vsMakeToggle("show not-yet-learnable (greyed)", !!window.vsShowUnavailable, v => { window.vsShowUnavailable = v }),
+        vsMakeToggle("TM/HM moves", window.vsIncludeTM !== false, v => { window.vsIncludeTM = v }),
+    )
+    box.append(toggles)
 
     const cols = document.createElement("div")
     cols.className = "vsCoverageCols"
@@ -739,27 +752,41 @@ function vsMovesOfType(name, type) {
             if (mv["split"] === "SPLIT_STATUS") continue
             if (!(Number(mv["power"]) > 0)) continue
             if (mv["type"] !== type) continue
-            // Level required to have the move: the level-up level, or 0 for
-            // TM/tutor/egg moves (obtainable regardless of level).
-            const lvl = Array.isArray(entry) ? Number(entry[1]) : 0
+            // Track sources and, separately, the lowest level-up level (Infinity
+            // if the move has no level-up source). Availability is derived later
+            // from the enabled sources (see vsMoveAvail).
+            const isLevelUp = ls === "levelUpLearnsets"
+            const lvl = isLevelUp ? Number(entry[1]) : Infinity
             if (!byName.has(moveName)) {
                 byName.set(moveName, {
                     name: mv["ingameName"],
                     power: Number(mv["power"]),
                     split: mv["split"],
                     sources: new Set([tag]),
-                    level: lvl,
+                    levelUpLevel: lvl,
                 })
             } else {
                 const m = byName.get(moveName)
                 m.sources.add(tag)
-                m.level = Math.min(m.level, lvl)
+                m.levelUpLevel = Math.min(m.levelUpLevel, lvl)
             }
         }
     }
     const list = [...byName.values()]
     list.sort((x, y) => y.power - x.power || x.name.localeCompare(y.name))
     return list
+}
+
+
+// Whether the move can be obtained at all (given the TM/HM toggle) and the level
+// at which it becomes available. Egg/Tutor/TM are level-independent (level 0);
+// otherwise it's the level-up level. A TM-only move with TM disabled is not
+// obtainable at all.
+function vsMoveAvail(mv, includeTM) {
+    const nonLevel = mv.sources.has("Egg") || mv.sources.has("Tutor") || (includeTM && mv.sources.has("TM"))
+    const obtainable = nonLevel || mv.levelUpLevel !== Infinity
+    const availLevel = nonLevel ? 0 : mv.levelUpLevel
+    return { obtainable, availLevel }
 }
 
 
@@ -859,11 +886,16 @@ function buildVsMoveList(detail) {
     panel.className = "vsMoveList"
 
     const level = vsLevelOf(detail.attacker)
+    const includeTM = window.vsIncludeTM !== false
+    // Resolve each move's availability for the current toggles; drop ones that
+    // aren't obtainable at all (e.g. TM-only moves when TM/HM is disabled).
     const all = vsMovesOfType(detail.attacker, detail.type)
+        .map(mv => { const a = vsMoveAvail(mv, includeTM); return Object.assign({}, mv, a) })
+        .filter(mv => mv.obtainable)
     // Hide moves the Pokémon can't have at its level, unless the toggle is on.
-    const list = (window.vsShowUnavailable ? all : all.filter(mv => mv.level <= level))
+    const list = (window.vsShowUnavailable ? all : all.filter(mv => mv.availLevel <= level))
         .sort((x, y) => {
-            const xa = x.level <= level, ya = y.level <= level
+            const xa = x.availLevel <= level, ya = y.availLevel <= level
             if (xa !== ya) return xa ? -1 : 1   // available first
             return y.power - x.power
         })
@@ -876,7 +908,7 @@ function buildVsMoveList(detail) {
         return panel
     }
     for (const mv of list) {
-        const avail = mv.level <= level
+        const avail = mv.availLevel <= level
         const row = document.createElement("div")
         row.className = avail ? "vsMoveRow" : "vsMoveRow vsMoveUnavailable"
 
@@ -886,7 +918,7 @@ function buildVsMoveList(detail) {
         if (!avail) {
             const req = document.createElement("span")
             req.className = "vsMoveReq"
-            req.innerText = `Lv${mv.level}`
+            req.innerText = `Lv${mv.availLevel}`
             nm.append(document.createTextNode(" "), req)
         }
 
@@ -901,7 +933,7 @@ function buildVsMoveList(detail) {
 
         const splitShort = mv.split === "SPLIT_PHYSICAL" ? "Phys" : mv.split === "SPLIT_SPECIAL" ? "Spec" : ""
         row.append(nm, meta, pct)
-        row.title = `${mv.power} BP · ${splitShort} · ${[...mv.sources].join(", ")}` + (avail ? "" : ` · learned at Lv${mv.level}`)
+        row.title = `${mv.power} BP · ${splitShort} · ${[...mv.sources].join(", ")}` + (avail ? "" : ` · learned at Lv${mv.availLevel}`)
         panel.append(row)
     }
 
@@ -1194,10 +1226,13 @@ function injectVsStyle() {
         .vsMoveKO { color: rgb(239,120,118); }
         .vsMoveUnavailable { opacity: 0.42; }
         .vsMoveReq { font-size: 10px; color: rgb(235,185,90); font-weight: 700; }
+        .vsCovToggles {
+            display: flex; flex-wrap: wrap; align-items: center; justify-content: center;
+            gap: 6px 18px; margin-bottom: 10px;
+        }
         .vsCovToggle {
-            display: flex; align-items: center; justify-content: center; gap: 6px;
-            font-size: 12px; opacity: 0.85; margin-bottom: 10px; cursor: pointer;
-            user-select: none;
+            display: inline-flex; align-items: center; gap: 6px;
+            font-size: 12px; opacity: 0.85; cursor: pointer; user-select: none;
         }
         .vsCovToggle input { width: auto; margin: 0; cursor: pointer; }
         .vsMoveListFoot {
