@@ -188,37 +188,64 @@ function buildSpeciesCatchHint(name) {
 }
 
 
-// Add an "Unbound" filter toggle to the Species tab that hides species not in
-// the Unbound dex (same mechanism as core's Strategy/Changed setting buttons).
+// Predicates for the dex filters (key = SPECIES_ token).
+const VS_DEX_PREDICATES = {
+    unbound: key => vsIsObtainable(key),
+    national: key => { const i = vsCatchInfo(key); return !!(i && i.nat != null && i.nat <= 809) },
+    borrius: key => { const i = vsCatchInfo(key); return !!(i && i.bor != null) },
+}
+
+
+// Apply a dex filter to the Species tracker (null clears it). One shared filter
+// tag ("dexFilter") so switching modes is clean.
+function vsApplySpeciesDexFilter(mode) {
+    if (typeof speciesTracker === "undefined") return
+    const pred = mode ? VS_DEX_PREDICATES[mode] : null
+    for (let i = 0; i < speciesTracker.length; i++) {
+        const f = speciesTracker[i]["filter"].filter(v => v !== "dexFilter")
+        speciesTracker[i]["filter"] = f
+        if (pred && !pred(speciesTracker[i]["key"])) f.push("dexFilter")
+    }
+    if (typeof lazyLoading === "function") lazyLoading(true)
+}
+
+
+// Add mutually-exclusive dex filter toggles (Unbound / National / Borrius) to the
+// Species tab, next to core's Strategy/Changed setting buttons.
 window.installSpeciesUnboundFilter = function () {
-    if (document.getElementById("onlyShowUnbound")) return
+    if (document.getElementById("dexFilter_unbound")) return
     const filter = document.getElementById("speciesFilter")
     if (!filter) return
 
-    const btn = document.createElement("button")
-    btn.type = "button"
-    btn.id = "onlyShowUnbound"
-    btn.className = "setting"
-    btn.innerText = "Unbound"
-    btn.title = "Show only Pokémon in the Unbound dex"
-    btn.addEventListener("click", () => {
-        if (typeof speciesTracker === "undefined") return
-        btn.classList.toggle("activeSetting")
-        const on = btn.classList.contains("activeSetting")
-        for (let i = 0; i < speciesTracker.length; i++) {
-            const key = speciesTracker[i]["key"]
-            if (on) {
-                if (!vsIsObtainable(key)) speciesTracker[i]["filter"].push("notUnbound")
-            } else {
-                speciesTracker[i]["filter"] = speciesTracker[i]["filter"].filter(v => v !== "notUnbound")
-            }
-        }
-        if (typeof lazyLoading === "function") lazyLoading(true)
-    })
+    const modes = [["national", "National"], ["unbound", "Unbound"], ["borrius", "Borrius"]]
+    const buttons = []
+    window.vsSpeciesDexMode = null
+
+    for (const [mode, labelText] of modes) {
+        const btn = document.createElement("button")
+        btn.type = "button"
+        btn.id = "dexFilter_" + mode
+        btn.className = "setting"
+        btn.dataset.mode = mode
+        btn.innerText = labelText
+        btn.title = {
+            unbound: "Show only Pokémon in the Unbound dex (905)",
+            national: "Show only the National dex (≤ #809)",
+            borrius: "Show only the Borrius regional dex",
+        }[mode]
+        btn.addEventListener("click", () => {
+            window.vsSpeciesDexMode = (window.vsSpeciesDexMode === mode) ? null : mode
+            buttons.forEach(b => b.classList.toggle("activeSetting", b.dataset.mode === window.vsSpeciesDexMode))
+            vsApplySpeciesDexFilter(window.vsSpeciesDexMode)
+        })
+        buttons.push(btn)
+    }
 
     const before = document.getElementById("speciesFilterList")
-    if (before) filter.insertBefore(btn, before)
-    else filter.append(btn)
+    for (const b of buttons) {
+        if (before) filter.insertBefore(b, before)
+        else filter.append(b)
+    }
 }
 
 
