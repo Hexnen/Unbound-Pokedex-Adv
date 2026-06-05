@@ -844,6 +844,12 @@ function buildVsCoverage(a, b) {
     cols.append(rightSlot)
 
     box.append(cols)
+
+    const foot = document.createElement("div")
+    foot.className = "vsCoverageFoot"
+    foot.innerText = "≈ %HP at the set levels · neutral, no EV · no item / ability / crit"
+    box.append(foot)
+
     return box
 }
 
@@ -1186,10 +1192,6 @@ function buildVsMoveList(detail) {
         panel.append(row)
     }
 
-    const foot = document.createElement("div")
-    foot.className = "vsMoveListFoot"
-    foot.innerText = `≈ %HP · Lv${vsLevelOf(detail.attacker)} vs Lv${vsLevelOf(detail.defender)} · neutral, no EV · no item/ability/crit`
-    panel.append(foot)
     return panel
 }
 
@@ -1501,10 +1503,10 @@ function injectVsStyle() {
             font-size: 12px; opacity: 0.85; cursor: pointer; user-select: none;
         }
         .vsCovToggle input { width: auto; margin: 0; cursor: pointer; }
-        .vsMoveListFoot {
-            margin-top: 7px; padding-top: 6px;
+        .vsCoverageFoot {
+            text-align: center; font-size: 11px; opacity: 0.5;
+            margin-top: 12px; padding-top: 8px;
             border-top: 1px solid rgba(255,255,255,0.08);
-            font-size: 10px; opacity: 0.5; line-height: 1.3;
         }
         .vsCovRight { display: inline-flex; align-items: center; gap: 3px; margin-left: auto; }
         .vsCovMult { font-size: 13px; font-weight: 700; min-width: 20px; text-align: right; }
