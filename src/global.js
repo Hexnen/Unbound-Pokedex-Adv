@@ -17,6 +17,11 @@ fetch('https://raw.githubusercontent.com/ydarissep/dex-core/main/index.html').th
     document.title = "Unbound Dex"
     document.getElementById("footerName").innerText = "Unbound\nYdarissep Pokedex"
 
+    // dex-core's index.html replaced the whole <head> above, wiping the PWA
+    // tags from our local index.html. Re-inject them so the app stays
+    // installable as a PWA.
+    injectPWATags()
+
 
 
     await fetch("https://raw.githubusercontent.com/ydarissep/dex-core/main/src/global.js").then(async response => {
@@ -52,5 +57,35 @@ fetch('https://raw.githubusercontent.com/ydarissep/dex-core/main/index.html').th
 }).catch(error => {
 	console.warn(error)
 })
+
+
+// Add (or re-add) the PWA <head> tags. Idempotent: skips anything already present.
+function injectPWATags() {
+    const head = document.head
+    const ensure = (selector, create) => {
+        if (!head.querySelector(selector)) head.append(create())
+    }
+    const meta = (name, content) => () => {
+        const m = document.createElement("meta")
+        m.setAttribute("name", name)
+        m.setAttribute("content", content)
+        return m
+    }
+    const link = (rel, href, extra) => () => {
+        const l = document.createElement("link")
+        l.setAttribute("rel", rel)
+        l.setAttribute("href", href)
+        if (extra) for (const k in extra) l.setAttribute(k, extra[k])
+        return l
+    }
+
+    ensure('link[rel="manifest"]', link("manifest", "manifest.webmanifest"))
+    ensure('meta[name="theme-color"]', meta("theme-color", "#ee1c25"))
+    ensure('meta[name="mobile-web-app-capable"]', meta("mobile-web-app-capable", "yes"))
+    ensure('meta[name="apple-mobile-web-app-capable"]', meta("apple-mobile-web-app-capable", "yes"))
+    ensure('meta[name="apple-mobile-web-app-status-bar-style"]', meta("apple-mobile-web-app-status-bar-style", "black-translucent"))
+    ensure('meta[name="apple-mobile-web-app-title"]', meta("apple-mobile-web-app-title", "Yda Dex"))
+    ensure('link[rel="apple-touch-icon"]', link("apple-touch-icon", "icons/apple-touch-icon.png"))
+}
 
 
