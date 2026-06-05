@@ -59,7 +59,7 @@
   <script defer src="src/offline.js"></script>
   <script defer src="src/global.js"></script>
 
-  <!-- PWA service worker registration -->
+  <!-- PWA service worker registration + install-prompt capture -->
   <script>
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', function () {
@@ -68,6 +68,20 @@
         });
       });
     }
+    // Capture the install prompt early (it can fire before the UI is built),
+    // so the footer "Install" button can trigger it on demand.
+    window.__deferredInstallPrompt = null;
+    window.addEventListener('beforeinstallprompt', function (e) {
+      e.preventDefault();
+      window.__deferredInstallPrompt = e;
+      window.dispatchEvent(new Event('pwa-installable'));
+      console.log('[PWA] installable — beforeinstallprompt captured');
+    });
+    window.addEventListener('appinstalled', function () {
+      window.__deferredInstallPrompt = null;
+      window.dispatchEvent(new Event('pwa-installed'));
+      console.log('[PWA] appinstalled');
+    });
   </script>
 </head>
 </html>

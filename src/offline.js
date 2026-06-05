@@ -125,6 +125,48 @@ async function warmOffline(onProgress) {
     return all.length;
 }
 
+// Add an "Install app" button that appears only when the browser has fired
+// beforeinstallprompt (i.e. the PWA actually meets install criteria). On
+// Chrome/Android this gives a one-tap install; iOS never fires the event, so
+// the button stays hidden there (users install via Share → Add to Home Screen).
+function installInstallButton() {
+    const container = document.getElementById("footerButtonContainer");
+    if (!container || document.getElementById("buttonInstall")) return;
+
+    const btn = document.createElement("button");
+    btn.id = "buttonInstall";
+    btn.type = "button";
+    btn.style.width = "140px";
+    btn.textContent = "Zainstaluj apkę";
+
+    const reflect = () => {
+        const standalone = window.matchMedia("(display-mode: standalone)").matches ||
+            window.navigator.standalone === true;
+        btn.style.display = (window.__deferredInstallPrompt && !standalone) ? "inline-block" : "none";
+    };
+    reflect();
+    window.addEventListener("pwa-installable", reflect);
+    window.addEventListener("pwa-installed", reflect);
+
+    btn.addEventListener("click", async () => {
+        const e = window.__deferredInstallPrompt;
+        if (!e) return;
+        btn.disabled = true;
+        try {
+            e.prompt();
+            await e.userChoice;
+        } catch (err) {
+            console.warn("Install prompt failed:", err);
+        } finally {
+            window.__deferredInstallPrompt = null;
+            btn.disabled = false;
+            reflect();
+        }
+    });
+
+    container.append(btn);
+}
+
 // Add the "Download for offline" button next to the Enhancements button.
 function installOfflineButton() {
     const container = document.getElementById("footerButtonContainer");
