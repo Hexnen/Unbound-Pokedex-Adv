@@ -188,6 +188,40 @@ function buildSpeciesCatchHint(name) {
 }
 
 
+// Add an "Unbound" filter toggle to the Species tab that hides species not in
+// the Unbound dex (same mechanism as core's Strategy/Changed setting buttons).
+window.installSpeciesUnboundFilter = function () {
+    if (document.getElementById("onlyShowUnbound")) return
+    const filter = document.getElementById("speciesFilter")
+    if (!filter) return
+
+    const btn = document.createElement("button")
+    btn.type = "button"
+    btn.id = "onlyShowUnbound"
+    btn.className = "setting"
+    btn.innerText = "Unbound"
+    btn.title = "Show only Pokémon in the Unbound dex"
+    btn.addEventListener("click", () => {
+        if (typeof speciesTracker === "undefined") return
+        btn.classList.toggle("activeSetting")
+        const on = btn.classList.contains("activeSetting")
+        for (let i = 0; i < speciesTracker.length; i++) {
+            const key = speciesTracker[i]["key"]
+            if (on) {
+                if (!vsIsObtainable(key)) speciesTracker[i]["filter"].push("notUnbound")
+            } else {
+                speciesTracker[i]["filter"] = speciesTracker[i]["filter"].filter(v => v !== "notUnbound")
+            }
+        }
+        if (typeof lazyLoading === "function") lazyLoading(true)
+    })
+
+    const before = document.getElementById("speciesFilterList")
+    if (before) filter.insertBefore(btn, before)
+    else filter.append(btn)
+}
+
+
 function injectCatchStyle() {
     if (document.getElementById("speciesCatchStyle")) return
     const s = document.createElement("style")

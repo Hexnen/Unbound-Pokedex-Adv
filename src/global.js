@@ -53,6 +53,13 @@ fetch('https://raw.githubusercontent.com/ydarissep/dex-core/main/index.html').th
         console.warn(error)
     }
 
+    // Local addition: "Unbound" filter toggle in the Species tab.
+    try {
+        installSpeciesUnboundFilter()
+    } catch (error) {
+        console.warn(error)
+    }
+
     // Local addition: add "good vs" / "sucks vs" columns to the species panel.
     try {
         installSpeciesMatchupColumns()
