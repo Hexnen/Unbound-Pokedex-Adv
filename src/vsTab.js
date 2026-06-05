@@ -21,8 +21,34 @@ const VS_STATS = [
     ["BST", "BST"],
 ]
 
+// Persist the filter toggles across reloads.
+function vsSaveToggles() {
+    try {
+        localStorage.setItem("vsToggles", JSON.stringify({
+            showUnavailable: !!window.vsShowUnavailable,
+            tm: window.vsIncludeTM !== false,
+            tutor: window.vsIncludeTutor !== false,
+            egg: window.vsIncludeEgg !== false,
+            obtainableOnly: window.vsObtainableOnly !== false,
+        }))
+    } catch (e) {}
+}
+
+
+function vsLoadToggles() {
+    let t = {}
+    try { t = JSON.parse(localStorage.getItem("vsToggles")) || {} } catch (e) {}
+    if (typeof t.showUnavailable === "boolean") window.vsShowUnavailable = t.showUnavailable
+    if (typeof t.tm === "boolean") window.vsIncludeTM = t.tm
+    if (typeof t.tutor === "boolean") window.vsIncludeTutor = t.tutor
+    if (typeof t.egg === "boolean") window.vsIncludeEgg = t.egg
+    if (typeof t.obtainableOnly === "boolean") window.vsObtainableOnly = t.obtainableOnly
+}
+
+
 window.buildVsTab = function () {
     if (document.getElementById("vsButton")) return
+    vsLoadToggles()
 
     const tableButton = document.getElementById("tableButton")
     const tableInput = document.getElementById("tableInput")
@@ -360,7 +386,7 @@ function buildVsHistory() {
     searchToggle.append(vsMakeToggle(
         "search: Unbound dex only",
         window.vsObtainableOnly !== false,
-        v => { window.vsObtainableOnly = v; vsEnsureNameList(true) },
+        v => { window.vsObtainableOnly = v; vsSaveToggles(); vsEnsureNameList(true) },
         "Limit the search box to Pokémon in the Unbound dex (roster from unboundwiki).",
     ))
     wrap.append(searchToggle)
@@ -817,10 +843,10 @@ function buildVsCoverage(a, b) {
     const toggles = document.createElement("div")
     toggles.className = "vsCovToggles"
     toggles.append(
-        vsMakeToggle("locked", !!window.vsShowUnavailable, v => { window.vsShowUnavailable = v }, "Show moves not learnable at this level (greyed out)"),
-        vsMakeToggle("TM/HM", window.vsIncludeTM !== false, v => { window.vsIncludeTM = v }),
-        vsMakeToggle("Tutor", window.vsIncludeTutor !== false, v => { window.vsIncludeTutor = v }),
-        vsMakeToggle("Egg", window.vsIncludeEgg !== false, v => { window.vsIncludeEgg = v }),
+        vsMakeToggle("locked", !!window.vsShowUnavailable, v => { window.vsShowUnavailable = v; vsSaveToggles() }, "Show moves not learnable at this level (greyed out)"),
+        vsMakeToggle("TM/HM", window.vsIncludeTM !== false, v => { window.vsIncludeTM = v; vsSaveToggles() }),
+        vsMakeToggle("Tutor", window.vsIncludeTutor !== false, v => { window.vsIncludeTutor = v; vsSaveToggles() }),
+        vsMakeToggle("Egg", window.vsIncludeEgg !== false, v => { window.vsIncludeEgg = v; vsSaveToggles() }),
     )
     box.append(toggles)
 
