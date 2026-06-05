@@ -445,7 +445,7 @@ function buildVsMonHeader(name) {
     for (const t of vsMonTypes(name)) {
         const badge = document.createElement("span")
         badge.className = `${t} background`
-        badge.innerText = sanitizeString(t)
+        badge.append(typeIcon(t), document.createTextNode(" " + sanitizeString(t)))
         types.append(badge)
     }
     col.append(types)
@@ -1216,6 +1216,27 @@ function injectVsStyle() {
         }
         .vsButtons { display: flex; justify-content: center; gap: 12px; margin-top: 16px; }
         .vsClearButton { margin: 0; }
+
+        /* ---- mobile ---- */
+        @media (max-width: 600px) {
+            #vsContent { padding: 10px 6px; }
+            .vsTableCell { padding: 6px 2px; }
+            .vsHead { gap: 2px; }
+            .vsMon { min-width: 104px; }
+            .vsHeadVs { margin: 22px 8px 0; font-size: 26px; }
+            .vsMonSprite { width: 66px; height: 66px; }
+            /* Coverage: columns side by side, open move list full-width below;
+               drop the reserved side slots (and hide empty ones) so nothing wraps
+               awkwardly. */
+            .vsCoverageCols { gap: 10px 14px; }
+            .vsCoverageRow { order: 1; }
+            .vsCovSlot { order: 2; flex: 1 0 100%; width: auto; justify-content: center; }
+            .vsCovSlot:empty { display: none; }
+            .vsMoveList { width: 100%; max-width: 320px; }
+            .vsCovChevron { display: none; }
+            /* Stats: stack BASE over CURRENT */
+            .vsStatsWrap { gap: 14px; }
+        }
     `
     document.head.append(style)
 }

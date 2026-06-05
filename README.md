@@ -35,4 +35,6 @@ UI. Hosting is plain GitHub Pages from the `main` branch.
 ## Credits
 
 - Pokédex engine & data tooling: **[ydarissep](https://github.com/ydarissep)** (`dex-core`).
+- Type symbol icons: [`duiker101/pokemon-type-svg-icons`](https://github.com/duiker101/pokemon-type-svg-icons)
+  (`sprites/types/`).
 - Unbound enhancements: DMan16, Aussi (randomized species), and the Unbound team.

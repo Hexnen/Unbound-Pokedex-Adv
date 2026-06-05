@@ -110,7 +110,7 @@ window.buildTypeChartTab = async function () {
         const th = document.createElement("th")
         th.className = `${def} typeChartHead typeChartColHead`
         th.title = sanitizeString(def)
-        th.innerText = typeChartAbbr(def)
+        th.append(typeIcon(def, "typeChartHeadIcon"))
         headRow.append(th)
     }
     thead.append(headRow)
@@ -124,7 +124,7 @@ window.buildTypeChartTab = async function () {
 
         const rowHead = document.createElement("th")
         rowHead.className = `${atk} typeChartHead typeChartRowHead`
-        rowHead.innerText = sanitizeString(atk)
+        rowHead.append(typeIcon(atk, "typeChartRowIcon"), document.createTextNode(" " + sanitizeString(atk)))
         tr.append(rowHead)
 
         for (const def of types) {
@@ -339,6 +339,19 @@ function typeChartAbbr(type) {
 }
 
 
+// A type symbol icon (white silhouette via CSS mask, tinted by currentColor).
+// Files live in sprites/types/<name>.svg.
+window.typeIcon = function (type, extraClass) {
+    const span = document.createElement("span")
+    span.className = "typeIcon" + (extraClass ? " " + extraClass : "")
+    const url = `url("sprites/types/${sanitizeString(type).toLowerCase()}.svg")`
+    span.style.webkitMaskImage = url
+    span.style.maskImage = url
+    span.title = sanitizeString(type)
+    return span
+}
+
+
 // Human label for a multiplier; neutral (1) is left blank to keep the grid readable.
 function typeChartMultLabel(mult) {
     if (mult === 1) return ""
@@ -435,6 +448,15 @@ function injectTypeChartStyle() {
             border-radius: 3px;
             color: #fff; text-shadow: 0 1px 1px rgba(0,0,0,0.5);
         }
+        .typeIcon {
+            display: inline-block; width: 1em; height: 1em;
+            background-color: currentColor; vertical-align: -0.12em;
+            -webkit-mask-size: contain; mask-size: contain;
+            -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat;
+            -webkit-mask-position: center; mask-position: center;
+        }
+        .typeChartHeadIcon { width: 18px; height: 18px; vertical-align: middle; }
+        .typeChartRowIcon { width: 14px; height: 14px; vertical-align: -0.18em; }
         /* multiplier colours */
         .mult0    { background: #2b2b2b; }
         .mult0_25 { background: #7a1d1d; }
