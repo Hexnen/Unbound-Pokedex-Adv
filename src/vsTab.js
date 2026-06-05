@@ -217,7 +217,7 @@ window.installSpeciesUnboundFilter = function () {
     const filter = document.getElementById("speciesFilter")
     if (!filter) return
 
-    const modes = [["borrius", "Borrius"], ["national", "National"], ["gen8", "Gen 8"]]
+    const modes = [["borrius", "Borrius"], ["national", "National"], ["gen8", "Post game"]]
     const buttons = []
     window.vsSpeciesDexMode = null
 
