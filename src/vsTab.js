@@ -877,6 +877,7 @@ function buildVsCoverageRow(attacker, defender, side) {
         const chip = document.createElement("span")
         chip.className = stab ? "vsCovChip vsCovStab" : "vsCovChip"
         chip.classList.add("vsCovClickable")
+        if (vsTypeMoveCount(attacker, type) === 0) chip.classList.add("vsCovChipEmpty")
         const isActive = sideDetail && sideDetail.type === type
         if (isActive) {
             chip.classList.add("vsCovChipActive")
@@ -995,6 +996,22 @@ function vsMoveAvail(mv, opts) {
     const obtainable = nonLevel || mv.levelUpLevel !== Infinity
     const availLevel = nonLevel ? 0 : mv.levelUpLevel
     return { obtainable, availLevel }
+}
+
+
+// How many moves of `type` the attacker would actually show in the move list
+// under the current toggles (source filters + level/locked). 0 → grey the chip.
+function vsTypeMoveCount(attacker, type) {
+    const level = vsLevelOf(attacker)
+    const opts = vsSourceOpts()
+    let n = 0
+    for (const mv of vsMovesOfType(attacker, type)) {
+        const a = vsMoveAvail(mv, opts)
+        if (!a.obtainable) continue
+        if (!window.vsShowUnavailable && a.availLevel > level) continue
+        n++
+    }
+    return n
 }
 
 
@@ -1442,6 +1459,7 @@ function injectVsStyle() {
             font-size: 10px; font-weight: 700; color: #fff;
             text-shadow: 0 1px 1px rgba(0,0,0,0.5);
         }
+        .vsCovChipEmpty { opacity: 0.35; }
         .vsCovClickable { cursor: pointer; transition: background 0.1s, box-shadow 0.1s; }
         .vsCovClickable:hover { background: rgba(255,255,255,0.12); }
         .vsCovChipActive {
