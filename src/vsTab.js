@@ -445,7 +445,7 @@ function buildVsMonHeader(name) {
     for (const t of vsMonTypes(name)) {
         const badge = document.createElement("span")
         badge.className = `${t} background`
-        badge.append(typeIcon(t), document.createTextNode(" " + sanitizeString(t)))
+        badge.innerText = sanitizeString(t)
         types.append(badge)
     }
     col.append(types)

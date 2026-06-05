@@ -148,6 +148,7 @@ window.buildTypeChartTab = async function () {
     table.append(container)
 
     injectTypeChartStyle()
+    injectTypeBadgeIconStyle(types)
 
     // Wire the button the same way core wires its own tabs.
     button.addEventListener("click", async () => {
@@ -336,6 +337,33 @@ function injectMatchupStyle() {
 // 3-letter abbreviation for the narrow column headers, e.g. TYPE_FIGHTING -> FIG.
 function typeChartAbbr(type) {
     return sanitizeString(type).slice(0, 3).toUpperCase()
+}
+
+
+// Inject a type symbol before every `.background` type badge across the whole
+// app (species & moves tables, the panel, the vs tab) via a CSS ::before mask.
+// Also left-aligns the badge content with a comfortable icon→word gap.
+function injectTypeBadgeIconStyle(types) {
+    if (document.getElementById("typeBadgeIconStyle")) return
+    let rules = `
+        .background[class*="TYPE_"] { justify-content: flex-start; }
+        .background[class*="TYPE_"]::before {
+            content: ""; flex: 0 0 auto;
+            width: 1.05em; height: 1.05em; margin-right: 0.5em;
+            background-color: #fff;
+            -webkit-mask-size: contain; mask-size: contain;
+            -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat;
+            -webkit-mask-position: center; mask-position: center;
+        }
+    `
+    for (const t of types) {
+        const file = sanitizeString(t).toLowerCase()
+        rules += `.${t}.background::before{-webkit-mask-image:url("sprites/types/${file}.svg");mask-image:url("sprites/types/${file}.svg")}\n`
+    }
+    const style = document.createElement("style")
+    style.id = "typeBadgeIconStyle"
+    style.textContent = rules
+    document.head.append(style)
 }
 
 
