@@ -65,6 +65,21 @@ window.buildVsTab = function () {
     window.vsNameMap = window.vsNameMap || {}
     tableInput.append(datalist)
 
+    // Load the Unbound roster + catch hints (scraped from unboundwiki) once.
+    if (!window.vsUnboundDex) {
+        fetch("src/unboundDex.json", { cache: "no-cache" })
+            .then(r => r.json())
+            .then(data => {
+                window.vsUnboundDex = data
+                window.vsUnboundRoster = new Set(Object.keys(data).map(vsNormName))
+                window.vsUnboundByNorm = {}
+                for (const k of Object.keys(data)) window.vsUnboundByNorm[vsNormName(k)] = data[k]
+                vsEnsureNameList(true)
+                renderVsTab()
+            })
+            .catch(e => console.warn("unboundDex.json", e))
+    }
+
     input.addEventListener("change", () => {
         const token = window.vsNameMap[input.value.trim().toLowerCase()]
         if (token) {
@@ -110,14 +125,41 @@ window.buildVsTab = function () {
 }
 
 
-// Populate the search datalist + name→token map once species data is available.
-function vsEnsureNameList() {
+function vsNormName(s) {
+    return String(s).toLowerCase().replace(/[^a-z0-9]/g, "")
+}
+
+
+// True if the species is in the Unbound roster (from src/unboundDex.json, scraped
+// from unboundwiki). Until that data has loaded, don't filter anything.
+function vsIsObtainable(name) {
+    const roster = window.vsUnboundRoster
+    if (!roster) return true
+    return roster.has(vsNormName(sanitizeString(name)))
+}
+
+
+// Unbound dex entry { nat, bor, catch } for a species, if known.
+function vsCatchInfo(name) {
+    if (!window.vsUnboundByNorm) return null
+    return window.vsUnboundByNorm[vsNormName(sanitizeString(name))] || null
+}
+
+
+// Populate the search datalist + name→token map. `force` rebuilds it (e.g. when
+// the "obtainable only" toggle changes).
+function vsEnsureNameList(force) {
     if (typeof species === "undefined") return
     const datalist = document.getElementById("vsInputDataList")
-    if (!datalist || datalist.options.length > 0) return
-    window.vsNameMap = window.vsNameMap || {}
+    if (!datalist) return
+    if (!force && datalist.options.length > 0) return
+
+    while (datalist.firstChild) datalist.removeChild(datalist.firstChild)
+    window.vsNameMap = {}
+    const obtainableOnly = window.vsObtainableOnly !== false
     const names = Object.keys(species)
         .filter(n => n !== "SPECIES_NONE" && species[n] && species[n]["baseSpeed"] != 0)
+        .filter(n => !obtainableOnly || vsIsObtainable(n))
         .map(n => [n, sanitizeString(n)])
         .sort((x, y) => x[1].localeCompare(y[1]))
     for (const [token, disp] of names) {
@@ -194,8 +236,18 @@ function buildVsHistory() {
 
     const label = document.createElement("div")
     label.className = "vsSectionLabel"
-    label.innerText = "History — click two Pokémon to compare"
+    label.innerText = "History — click two Pokémon to compare (or search above)"
     wrap.append(label)
+
+    const searchToggle = document.createElement("div")
+    searchToggle.className = "vsCovToggles"
+    searchToggle.append(vsMakeToggle(
+        "search: Unbound dex only",
+        window.vsObtainableOnly !== false,
+        v => { window.vsObtainableOnly = v; vsEnsureNameList(true) },
+        "Limit the search box to Pokémon in the Unbound dex (roster from unboundwiki).",
+    ))
+    wrap.append(searchToggle)
 
     const hist = vsValidHistory()
     if (hist.length === 0) {
@@ -466,6 +518,27 @@ function buildVsMonHeader(name, result, side) {
         abilitiesEl.append(ab)
     }
     col.append(abilitiesEl)
+
+    // Unbound dex numbers + how to catch (from unboundwiki).
+    const info = vsCatchInfo(name)
+    if (info) {
+        if (info.nat || info.bor) {
+            const dex = document.createElement("div")
+            dex.className = "vsMonDex"
+            const parts = []
+            if (info.nat) parts.push(`Nat #${info.nat}`)
+            if (info.bor) parts.push(`Borrius #${info.bor}`)
+            dex.innerText = parts.join(" · ")
+            col.append(dex)
+        }
+        if (info.catch) {
+            const c = document.createElement("div")
+            c.className = "vsMonCatch"
+            c.innerText = info.catch
+            c.title = info.catch
+            col.append(c)
+        }
+    }
 
     return col
 }
@@ -1194,6 +1267,12 @@ function injectVsStyle() {
         .vsLvlBtn:active { background: rgba(255,255,255,0.28); }
         .vsMonTypes { display: flex; gap: 4px; justify-content: center; }
         .vsMonAbilities { text-align: center; font-size: 13px; opacity: 0.85; }
+        .vsMonDex { text-align: center; font-size: 11px; opacity: 0.55; margin-top: 3px; }
+        .vsMonCatch {
+            text-align: center; font-size: 12px; opacity: 0.8;
+            max-width: 170px; line-height: 1.3; margin-top: 2px;
+            color: rgb(150,200,255);
+        }
         .vsHeadVs { font-size: 34px; opacity: 0.5; letter-spacing: 1px; margin: 22px 22px 0; }
         .vsMonSpriteWrap { position: relative; display: inline-block; line-height: 0; }
         .vsResultArrow {
