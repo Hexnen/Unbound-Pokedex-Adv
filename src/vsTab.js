@@ -572,13 +572,13 @@ function vsCoverageAgainst(attacker, defender) {
 // strongest single move of each type). Used to auto-open the best matchup.
 function vsBestCoverageType(attacker, defender) {
     const level = vsLevelOf(attacker)
-    const includeTM = window.vsIncludeTM !== false
+    const opts = vsSourceOpts()
     let best = null
     let bestPct = -1
     for (const t of vsAttackingMoveTypes(attacker)) {
         let typeMax = 0
         for (const mv of vsMovesOfType(attacker, t)) {
-            const a = vsMoveAvail(mv, includeTM)
+            const a = vsMoveAvail(mv, opts)
             if (!a.obtainable || a.availLevel > level) continue // usable now only
             const d = vsEstimateDamage(attacker, defender, mv.power, mv.split, t)
             if (d.maxPct > typeMax) typeMax = d.maxPct
@@ -628,7 +628,9 @@ function buildVsCoverage(a, b) {
     toggles.className = "vsCovToggles"
     toggles.append(
         vsMakeToggle("show not-yet-learnable (greyed)", !!window.vsShowUnavailable, v => { window.vsShowUnavailable = v }),
-        vsMakeToggle("TM/HM moves", window.vsIncludeTM !== false, v => { window.vsIncludeTM = v }),
+        vsMakeToggle("TM/HM", window.vsIncludeTM !== false, v => { window.vsIncludeTM = v }),
+        vsMakeToggle("Tutor", window.vsIncludeTutor !== false, v => { window.vsIncludeTutor = v }),
+        vsMakeToggle("Egg", window.vsIncludeEgg !== false, v => { window.vsIncludeEgg = v }),
     )
     box.append(toggles)
 
@@ -785,8 +787,21 @@ function vsMovesOfType(name, type) {
 // at which it becomes available. Egg/Tutor/TM are level-independent (level 0);
 // otherwise it's the level-up level. A TM-only move with TM disabled is not
 // obtainable at all.
-function vsMoveAvail(mv, includeTM) {
-    const nonLevel = mv.sources.has("Egg") || mv.sources.has("Tutor") || (includeTM && mv.sources.has("TM"))
+// Which move sources are enabled by the toggles (level-up is always on).
+function vsSourceOpts() {
+    return {
+        tm: window.vsIncludeTM !== false,
+        egg: window.vsIncludeEgg !== false,
+        tutor: window.vsIncludeTutor !== false,
+    }
+}
+
+
+function vsMoveAvail(mv, opts) {
+    const nonLevel =
+        (opts.egg && mv.sources.has("Egg")) ||
+        (opts.tutor && mv.sources.has("Tutor")) ||
+        (opts.tm && mv.sources.has("TM"))
     const obtainable = nonLevel || mv.levelUpLevel !== Infinity
     const availLevel = nonLevel ? 0 : mv.levelUpLevel
     return { obtainable, availLevel }
@@ -794,12 +809,12 @@ function vsMoveAvail(mv, includeTM) {
 
 
 // "When does it learn this move" label: the level for level-up moves, otherwise
-// the source (TM/Tutor/Egg). Uses the already-resolved availLevel.
-function vsLearnLabel(mv) {
+// the enabled source (TM/Tutor/Egg). Uses the already-resolved availLevel.
+function vsLearnLabel(mv, opts) {
     if (mv.availLevel > 0 && mv.availLevel !== Infinity) return `Lv${mv.availLevel}`
-    if (mv.sources.has("TM")) return "TM"
-    if (mv.sources.has("Tutor")) return "Tutor"
-    if (mv.sources.has("Egg")) return "Egg"
+    if (opts.tm && mv.sources.has("TM")) return "TM"
+    if (opts.tutor && mv.sources.has("Tutor")) return "Tutor"
+    if (opts.egg && mv.sources.has("Egg")) return "Egg"
     return "—"
 }
 
@@ -909,11 +924,11 @@ function buildVsMoveList(detail) {
     panel.append(owner)
 
     const level = vsLevelOf(detail.attacker)
-    const includeTM = window.vsIncludeTM !== false
+    const opts = vsSourceOpts()
     // Resolve each move's availability for the current toggles; drop ones that
-    // aren't obtainable at all (e.g. TM-only moves when TM/HM is disabled).
+    // aren't obtainable at all (e.g. a TM-only move when TM/HM is disabled).
     const all = vsMovesOfType(detail.attacker, detail.type)
-        .map(mv => { const a = vsMoveAvail(mv, includeTM); return Object.assign({}, mv, a) })
+        .map(mv => Object.assign({}, mv, vsMoveAvail(mv, opts)))
         .filter(mv => mv.obtainable)
     // Hide moves the Pokémon can't have at its level, unless the toggle is on.
     const list = (window.vsShowUnavailable ? all : all.filter(mv => mv.availLevel <= level))
@@ -956,7 +971,7 @@ function buildVsMoveList(detail) {
 
         const learn = document.createElement("span")
         learn.className = "vsMoveLearn"
-        learn.innerText = vsLearnLabel(mv)
+        learn.innerText = vsLearnLabel(mv, opts)
 
         const splitShort = mv.split === "SPLIT_PHYSICAL" ? "Phys" : mv.split === "SPLIT_SPECIAL" ? "Spec" : ""
         row.append(nm, learn, meta, pct)
