@@ -1,7 +1,7 @@
 window.repoDex = "ydarissep/Unbound-Pokedex"
 window.repo1 = "Skeli789/Complete-Fire-Red-Upgrade/master"
 window.repo2 = "Skeli789/Dynamic-Pokemon-Expansion/Unbound"
-window.checkUpdate = "22 Unbound"
+window.checkUpdate = "23 Unbound"
 
 
 fetch('https://raw.githubusercontent.com/ydarissep/dex-core/main/index.html').then(async response => {
@@ -63,6 +63,13 @@ fetch('https://raw.githubusercontent.com/ydarissep/dex-core/main/index.html').th
     // Local addition: add "good vs" / "sucks vs" columns to the species panel.
     try {
         installSpeciesMatchupColumns()
+    } catch (error) {
+        console.warn(error)
+    }
+
+    // Local addition: show the EV yield each species gives when defeated.
+    try {
+        installSpeciesEVYield()
     } catch (error) {
         console.warn(error)
     }

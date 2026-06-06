@@ -34,7 +34,7 @@ function regexSpecies(textSpecies, species){
 function regexBaseStats(textBaseStats, species){
     const lines = textBaseStats.split("\n")
 
-    const regex = /baseHP|baseAttack|baseDefense|baseSpeed|baseSpAttack|baseSpDefense|type1|type2|item1|item2|eggGroup1|eggGroup2|ability1|ability2|hiddenAbility/
+    const regex = /baseHP|baseAttack|baseDefense|baseSpeed|baseSpAttack|baseSpDefense|evYield_HP|evYield_Attack|evYield_Defense|evYield_SpAttack|evYield_SpDefense|evYield_Speed|type1|type2|item1|item2|eggGroup1|eggGroup2|ability1|ability2|hiddenAbility/
     let change = false, value, name
 
     lines.forEach(line => {
@@ -58,7 +58,7 @@ function regexBaseStats(textBaseStats, species){
 
 
 
-            if(match === "baseHP" || match === "baseAttack" || match === "baseDefense" || match === "baseSpeed" || match === "baseSpAttack" || match === "baseSpDefense"){
+            if(match === "baseHP" || match === "baseAttack" || match === "baseDefense" || match === "baseSpeed" || match === "baseSpAttack" || match === "baseSpDefense" || match.startsWith("evYield")){
                 const matchInt = line.match(/\d+/)
                 if(matchInt)
                     value = parseInt(matchInt[0])
@@ -71,8 +71,10 @@ function regexBaseStats(textBaseStats, species){
 
 
 
-            if(change === true)
-                species[name]["changes"].push([match, value])
+            if(change === true){
+                if(!match.startsWith("evYield")) // EV yields aren't part of the DPE changelog
+                    species[name]["changes"].push([match, value])
+            }
             else if(change === false){
                 if(match === "ability1" || match === "ability2" || match === "hiddenAbility"){
                     species[name]["abilities"].push(value)

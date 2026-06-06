@@ -375,6 +375,12 @@ function initializeSpeciesObj(species){
         species[name]["baseSpDefense"] = 0
         species[name]["baseSpeed"] = 0
         species[name]["BST"] = 0
+        species[name]["evYield_HP"] = 0
+        species[name]["evYield_Attack"] = 0
+        species[name]["evYield_Defense"] = 0
+        species[name]["evYield_SpAttack"] = 0
+        species[name]["evYield_SpDefense"] = 0
+        species[name]["evYield_Speed"] = 0
         species[name]["abilities"] = []
         species[name]["type1"] = ""
         species[name]["type2"] = ""
